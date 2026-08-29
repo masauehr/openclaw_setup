@@ -50,6 +50,18 @@
 
 ## ログ
 
+### 2026-08-29 (9) — git 管理化・GitHub public リポジトリへ push
+
+- **やったこと**:
+  - 公開前スキャン: 全 `.md` に実トークン/APIキー/本名/メール無しを確認
+  - 個人識別子をプレースホルダ化: `openclaw_uehr`→`openclaw-test` / `U0BTCCXRPJP`→`U0XXXXXXXXX` /
+    `/Users/masahiro/.openclaw`→`~/.openclaw`
+  - `git init -b main` → 初回コミット `8e92bfd`（8ファイル）
+  - `gh repo create openclaw_setup --public --source=. --push`
+- **結果**: https://github.com/masauehr/openclaw_setup （Public、`main`）
+- **注意**: 今後 `openclaw.json` 実体や秘密情報をこのディレクトリに置かない（`.gitignore` 済み）。
+  以降の変更は `git add` → `commit` → `push`（CLAUDE.md ルール）
+
 ### 2026-08-29 (8) — 定期情報収集（cron）を手動セットアップ
 
 - **経緯**: Slack で クゥ に「AI週次／気象2回／経済2回のダイジェストを DM に。設定後テスト実行」と指示 →
