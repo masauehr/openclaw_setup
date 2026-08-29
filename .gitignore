@@ -1,0 +1,9 @@
+# 秘密情報・実体は追跡しない
+.env
+*.key
+*.pem
+secrets*
+# OpenClaw の設定実体を誤ってコピーした場合
+openclaw.json
+**/openclaw.json
+.DS_Store
