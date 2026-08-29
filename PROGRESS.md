@@ -80,8 +80,8 @@
 
 - **やったこと**:
   - 公開前スキャン: 全 `.md` に実トークン/APIキー/本名/メール無しを確認
-  - 個人識別子をプレースホルダ化: `openclaw_uehr`→`openclaw-test` / `U0BTCCXRPJP`→`U0XXXXXXXXX` /
-    `/Users/masahiro/.openclaw`→`~/.openclaw`
+  - 個人識別子（Slack ワークスペース名 / Slack メンバーID / home パスのユーザー名）を
+    プレースホルダ（`openclaw-test` / `U0XXXXXXXXX` / `~`）に置換
   - `git init -b main` → 初回コミット `8e92bfd`（8ファイル）
   - `gh repo create openclaw_setup --public --source=. --push`
 - **結果**: https://github.com/masauehr/openclaw_setup （Public、`main`）
