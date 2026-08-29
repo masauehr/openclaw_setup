@@ -125,7 +125,35 @@
 - 原因: ローカルモデル + Web 検索多用で 1 ラン 10 分超。ジョブ既定 timeout 600s を超過。
 - 対処: `openclaw cron edit <id> --timeout-seconds 1200`。根本的には高速なモデルへ。
 
-### （テンプレ）YYYY-MM-DD — 症状の1行要約
+### 2026-08-29 — cron ジョブ2本が同時刻起動で `AbortError: agent run aborted`
+
+- 症状: `0 9,18 * * *` の weather / econ が同じ分に起動し、両方 `AbortError`（各6分前後で中断）。
+- 原因: 1台の Ollama で 22GB モデルを2本同時推論しようとして詰まる。
+- 対処: スケジュールをずらす（`openclaw cron edit <id> --cron "5 9,18 * * *" --tz Asia/Tokyo`）。
+  根本的にはクラウドモデル（Anthropic）へ切替。
+
+### 2026-08-29 — `openclaw models auth login` が `No provider plugins found`
+
+- 症状: `openclaw models auth login --provider anthropic` が
+  `Error: No provider plugins found. Install one via 'openclaw plugins install'.`
+- 原因: 過去に `openclaw config set plugins.allow '["slack","duckduckgo"]'` で作った**排他 allowlist**が、
+  stock の `@openclaw/anthropic-provider` まで無効化していた。
+- 対処: `openclaw config unset plugins.allow`（排他リスト自体をやめる）＋ `openclaw plugins enable anthropic`
+  → `openclaw daemon restart`。
+- 補足: `--method setup-token` は無効名。`openclaw models auth login --provider anthropic` を**引数なし**で
+  実行し、対話メニューで「Anthropic setup-token」を選ぶ。
+
+### 2026-08-29 — cron が即エラー `payload.model '…' rejected by agents.defaults.models allowlist`
+
+- 症状: `openclaw cron edit <id> --model anthropic/claude-sonnet-5` 後、実行が1秒で error。
+- 原因: cron の `--model` override は `agents.defaults.models`（設定内のモデル allowlist）に
+  載っているモデルしか使えない。onboard 後は Ollama 2つだけが登録されていた。
+- 対処:
+  ```
+  printf '%s' '{ "agents": { "defaults": { "models": { "anthropic/claude-sonnet-5": {}, "anthropic/claude-haiku-4-5": {} } } } }' \
+    | openclaw config patch --stdin
+  openclaw daemon restart
+  ```
 
 ### （テンプレ）YYYY-MM-DD — 症状の1行要約
 

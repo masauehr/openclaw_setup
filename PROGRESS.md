@@ -18,37 +18,63 @@
 | エージェント identity | 名前「クゥ」/ 黒猫 / 🐈‍⬛（`IDENTITY.md`、ユーザーが Slack 経由で設定） |
 | プラグイン | `slack`（ClawHub）, `duckduckgo`（stock, Web検索用）を enable。`plugins.allow=["slack","duckduckgo"]` |
 | memory search | 無効（`memorySearch.enabled=false`。OpenAI キー不要化） |
-| 定期実行(cron) | 3ジョブ登録（下表）。Slack DM 配信。**モデルはローカルのまま=要改善** |
-| Anthropic | 未追加（`claude-cli/*` は models 一覧に見えるが未認証） |
+| 定期実行(cron) | 3ジョブ（下表）。**model=`anthropic/claude-sonnet-5`**（fallback haiku-4-5）。Slack DM 配信・テストOK |
+| Anthropic | 追加済み（`claude setup-token` → `models auth login`「Anthropic setup-token」。cron 専用、対話既定は Ollama） |
+| プラグイン方針 | `plugins.allow` は**使わない**（排他リストが provider を巻き込むため解除）。必要な plugin は個別 enable |
 
-### 登録済み cron ジョブ
+### 登録済み cron ジョブ（すべて model=`anthropic/claude-sonnet-5` / fallback `anthropic/claude-haiku-4-5`）
 
-| id (先頭) | name | schedule (JST) | 内容 | timeout |
-|---|---|---|---|---|
-| `445881d3` | `weather-jp-2x` | `0 9,18 * * *` | 日本の気象・防災まとめ | 1200s |
-| `b18e0f97` | `econ-daily-2x` | `0 9,18 * * *` | 日本株・為替・世界の経済指標/イベント | 1200s |
-| `db8a0d0b` | `ai-weekly-digest` | `0 9 * * 1` | 週次 AI 動向ダイジェスト | 1200s |
+| id (先頭) | name | schedule (JST) | 内容 |
+|---|---|---|---|
+| `445881d3` | `weather-jp-2x` | `0 9,18 * * *` | 日本の気象・防災まとめ |
+| `b18e0f97` | `econ-daily-2x` | `5 9,18 * * *` | 日本株・為替・世界の経済指標/イベント |
+| `db8a0d0b` | `ai-weekly-digest` | `10 9 * * 1` | 週次 AI 動向ダイジェスト |
 
-すべて `--channel slack --to slack:U0XXXXXXXXX --announce --expect-final --tz Asia/Tokyo`。
+共通: `--channel slack --to slack:U0XXXXXXXXX --announce --expect-final --tz Asia/Tokyo --timeout-seconds 1200`。
+実行時刻を数分ずつずらして同時実行を回避。テスト実行は 36〜42 秒で Slack 配信成功。
 操作: `openclaw cron list|get <id>|edit <id>|run <id> --wait --expect-final|rm <id>`。
+
+> cron のモデル override は `agents.defaults.models` allowlist に載っている必要がある
+> （`openclaw config patch --stdin` で `anthropic/claude-sonnet-5` 等を追加済み）。
 
 ## 未解決の課題・確認事項
 
-- [ ] **ダイジェストの品質/速度** — ローカル `ornith-1.5:35b` は 1ラン 4〜10分超・出力不安定・10分でtimeout実績。
-      → **Anthropic 追加（`claude setup-token` → `openclaw models auth login --provider anthropic --method setup-token`）**
-      して `openclaw cron edit <id> --model anthropic/claude-sonnet-5`（3ジョブ）に切替が推奨。ユーザー端末で実施／秘密情報
-- [ ] **18:00 の自動実行結果を Slack で確認**（weather / econ 初の定時ラン）
-- [ ] クゥ（Slack のエージェント）に「cron は設定済み」を伝える（本人が再登録して重複しないように）
-- [ ] Bot トークン再発行の反映確認（ユーザー「再設定済み」と回答。`channels status` は healthy）
+- [x] ~~ダイジェストの品質/速度~~ → Anthropic `claude-sonnet-5` に切替。テストで 36〜42 秒・実用品質
+- [ ] **明朝 9:00 / 9:05 の自動実行を Slack で確認**（Anthropic 切替後の初の定時ラン）
+- [ ] **クゥ（Slack のエージェント）に「cron は Claude Code 側で設定済み」を伝える** — 本人が別途登録して
+      重複しないように。19:03 頃 クゥが Slack で JMA-MCP / Yahoo 天気を提案していた（並行作業になっている）
+- [ ] Claude Pro サブスクの利用枠消費（1日 5ラン想定）。枠が気になれば `--model anthropic/claude-haiku-4-5` に
 - [ ] ポート 18789 の常時開放の是非（現状 loopback のみ。リモートは Tailscale 検討）
 - [ ] スリープ運用方針（Mac 起動中のみ稼働。常用するなら `caffeinate` / 常時起動機）
-- [ ] doctor: 「openclaw.json に平文シークレット」警告（Gateway トークン）。SecretRef 化するか検討
+- [ ] doctor: 「openclaw.json に平文シークレット」警告（Gateway トークン ＋ Anthropic token）。SecretRef 化を検討
 - [ ] doctor: Skills の Missing requirements 33 件（`openclaw doctor --fix` で未使用整理）
 - [ ] 運用が安定したら pc_docs にマニュアル化（このプロジェクトの終了条件）
 
 ---
 
 ## ログ
+
+### 2026-08-29 (10) — Anthropic 追加・cron を claude-sonnet-5 に切替（ダイジェスト実運用化）
+
+- **経緯**: 18:00 の初回定時実行で weather / econ が両方 `AbortError`（同時起動＋ローカルモデルが重い）
+- **やったこと**:
+  - cron スケジュールをずらして同時実行を回避: weather `0 9,18`、econ `5 9,18`、AI `10 9 * * 1`
+  - Anthropic 認証（ユーザーが自端末で）:
+    `claude setup-token` → `openclaw models auth login --provider anthropic`（対話）→ **「Anthropic setup-token」**を選択
+    （「Claude CLI」は onboard 同様 keychain を読めず不可。API key は残高不足）
+    → `anthropic:default (anthropic/token)` プロファイル登録
+  - 途中の詰まり:
+    1. `models auth login` が `No provider plugins found` → `plugins.allow=["slack","duckduckgo"]` の排他リストが
+       anthropic プロバイダまでブロックしていた → **`openclaw config unset plugins.allow`**（排他リスト自体をやめた）
+       ＋ `openclaw plugins enable anthropic`
+    2. cron 実行が即エラー `payload.model '…' rejected by agents.defaults.models allowlist` →
+       `agents.defaults.models` に使うモデルの登録が必要 →
+       `openclaw config patch --stdin` で `anthropic/claude-sonnet-5` と `anthropic/claude-haiku-4-5` を追加
+  - 3ジョブを `--model anthropic/claude-sonnet-5 --fallbacks anthropic/claude-haiku-4-5` に変更
+- **結果**: weather / econ をテスト実行 → **status ok / Slack 配信成功 / 所要 36〜42秒**（ローカル比で桁違いに速い）。
+  内容も実データ入りの実用的なダイジェストに。**定期ダイジェスト実運用化 完了**
+- **次アクション**: 明朝 9:00 / 9:05 の自動実行を Slack で確認 / クゥ（Slack側エージェント）に cron 設定済みを共有 /
+  対話用の既定モデルは Ollama のまま（cron のみ Anthropic）
 
 ### 2026-08-29 (9) — git 管理化・GitHub public リポジトリへ push
 

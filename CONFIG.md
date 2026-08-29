@@ -85,16 +85,19 @@ OpenClaw バージョン: `2026.7.1-2 (0790d9f)`
 
 ## プラグイン（2026-08-29 実測）
 
-`plugins.allow` を設定すると allowlist が排他的になり、stock プラグインも列挙が必要。
-
-| プラグイン | 種別 | 状態 | 用途 |
+| プラグイン | id | 種別 | 用途 |
 |---|---|---|---|
-| `slack` (`@openclaw/slack`) | ClawHub 公式 | enabled | Slack チャンネル。`~/.openclaw/extensions/slack` |
-| `duckduckgo` (`@openclaw/duckduckgo-plugin`) | stock（本体同梱） | enabled | Web 検索（キー不要）。cron ダイジェスト用に有効化 |
+| `@openclaw/slack` | `slack` | ClawHub 公式 | Slack チャンネル。`~/.openclaw/extensions/slack` |
+| `@openclaw/duckduckgo-plugin` | `duckduckgo` | stock（同梱） | Web 検索（キー不要）。cron ダイジェスト用 |
+| `@openclaw/anthropic-provider` | `anthropic` | stock（同梱） | Anthropic プロバイダ。cron を Claude で回すため |
 
-`openclaw config get plugins.allow` → `["slack","duckduckgo"]`
+> ⚠️ **`plugins.allow` は使わない**。設定すると allowlist が**排他的**になり、
+> stock の provider プラグイン（anthropic 等）まで巻き込んでブロックする
+> （`models auth login` が `No provider plugins found` で失敗した）。
+> 一度 `openclaw config unset plugins.allow` で解除済み。非バンドル plugin の
+> 起動時 warning は無害。個別に `openclaw plugins enable <id>` すれば足りる。
 
-操作: `openclaw plugins list` / `plugins enable <id>` / `plugins inspect <id>` → 変更後 `openclaw daemon restart`
+操作: `openclaw plugins list [--json]` / `plugins enable <id>` / `plugins inspect <id>` → `openclaw daemon restart`
 
 ---
 
@@ -102,28 +105,38 @@ OpenClaw バージョン: `2026.7.1-2 (0790d9f)`
 
 保存: SQLite（`~/.openclaw/state/openclaw.sqlite`）。スケジューラは `openclaw cron status` で `enabled`。
 
-| id（先頭） | name | cron (JST) | 内容 | timeout |
-|---|---|---|---|---|
-| `445881d3` | `weather-jp-2x` | `0 9,18 * * *` | 日本の気象・防災まとめ | 1200s |
-| `b18e0f97` | `econ-daily-2x` | `0 9,18 * * *` | 日本株・為替・世界の経済指標/イベント | 1200s |
-| `db8a0d0b` | `ai-weekly-digest` | `0 9 * * 1` | 週次 AI 動向ダイジェスト | 1200s |
+| id（先頭） | name | cron (JST) | 内容 |
+|---|---|---|---|
+| `445881d3` | `weather-jp-2x` | `0 9,18 * * *` | 日本の気象・防災まとめ |
+| `b18e0f97` | `econ-daily-2x` | `5 9,18 * * *` | 日本株・為替・世界の経済指標/イベント |
+| `db8a0d0b` | `ai-weekly-digest` | `10 9 * * 1` | 週次 AI 動向ダイジェスト |
 
-共通オプション: `--channel slack --to slack:U0XXXXXXXXX --announce --expect-final --tz Asia/Tokyo`
+共通オプション:
+`--model anthropic/claude-sonnet-5 --fallbacks anthropic/claude-haiku-4-5`
+`--channel slack --to slack:U0XXXXXXXXX --announce --expect-final --tz Asia/Tokyo --timeout-seconds 1200`
 （`--announce` = エージェントが自力で送れない場合スケジューラが最終返信を代理配信）
+実行時刻は数分ずつずらして同時実行を回避（1台の Ollama で複数ローカル推論が詰まった対策の名残）。
 
 操作:
 ```
 openclaw cron list
 openclaw cron get <id>                          # JSON 全体
 openclaw cron edit <id> --model <provider/model># 使用モデル変更
+openclaw cron edit <id> --cron "<expr>" --tz Asia/Tokyo
 openclaw cron edit <id> --timeout-seconds <n>
 openclaw cron run <id> --wait --expect-final    # 手動テスト実行
 openclaw cron runs --id <id>                    # 実行履歴
 openclaw cron disable|enable|rm <id>
 ```
 
-**課題**: 既定モデル `ollama/ornith-1.5:35b` は 1ラン 4〜10分・出力不安定。
-→ Anthropic 追加後に `openclaw cron edit <id> --model anthropic/claude-sonnet-5` へ切替推奨。
+**モデル切替時の注意**: `--model` の値は `agents.defaults.models` allowlist に登録済みである必要がある。
+未登録だと即エラー `payload.model '…' rejected by agents.defaults.models allowlist`。追加は:
+```
+printf '%s' '{ "agents": { "defaults": { "models": { "anthropic/claude-sonnet-5": {} } } } }' | openclaw config patch --stdin
+```
+
+**実績**: `anthropic/claude-sonnet-5` で weather / econ をテスト実行 → status ok・Slack 配信成功・36〜42 秒。
+ローカル `ollama/ornith-1.5:35b`（1ラン 4〜10分・不安定・同時実行で AbortError）から切替済み。
 
 ---
 
@@ -141,13 +154,15 @@ openclaw cron disable|enable|rm <id>
 ### 記録欄（onboard 後に記入）— 2026-08-29 実測
 
 ```
-選択したプロバイダ: なし（onboard は --auth-choice skip で通した）
-                    → その後 Ollama を手動設定（openclaw が localhost:11434 のモデルを自動列挙）
-既定モデル: ollama/ornith-1.5:35b
-フォールバック: ollama/qwen3.8:27b-mlx
-APIキーの保存先: 不要（ローカル Ollama）
-環境変数: 不要
-認証ストア: ~/.openclaw/agents/main/agent/openclaw-agent.sqlite （ollama:default=marker）
+対話（既定）: ollama/ornith-1.5:35b（fallback ollama/qwen3.8:27b-mlx）… ローカル・無料
+cron（ダイジェスト）: anthropic/claude-sonnet-5（fallback anthropic/claude-haiku-4-5）
+
+Anthropic 認証: claude setup-token → openclaw models auth login --provider anthropic
+               → 対話メニューで「Anthropic setup-token」を選択（「Claude CLI」は keychain 読めず不可）
+               → プロファイル anthropic:default (anthropic/token)
+認証ストア: ~/.openclaw/agents/main/agent/openclaw-agent.sqlite
+           （ollama:default=marker / anthropic:default=token）
+APIキー環境変数: 不要（token はストアに保存。openclaw.json には平文 token は入らないが sqlite にはある）
 ```
 
 補足:
