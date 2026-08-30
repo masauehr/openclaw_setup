@@ -207,9 +207,9 @@ printf '%s' '{ "agents": { "defaults": { "models": { "anthropic/claude-sonnet-5"
 ### 記録欄（onboard 後に記入）— 2026-08-29 実測
 
 ```
-対話（既定）: ollama/qwen3.6:35b-mlx（fallback ollama/qwen3.8:27b-mlx）… ローカル・無料
-              ※ 8/30 変更。ornith-1.5:35b は「No response requested.」定型句を返す不具合、
-                 nemotron-3.5-lightning:30b-mlx はツールを大量ループして空応答。qwen3.6 が最良
+対話（既定）: anthropic/claude-haiku-4-5（fallback ollama/qwen3.6:35b-mlx）
+              ※ 8/30: ローカル勢（ornith/qwen3.6/nemotron）は観測値ランキングで幻覚・中国語混入・
+                 20〜30秒。claude-haiku-4-5 は 8〜10秒で正確。fallback の qwen3.6 は課金枠切れ時の劣化用
 cron（ダイジェスト）: anthropic/claude-sonnet-5（fallback anthropic/claude-haiku-4-5）
 
 Anthropic 認証: claude setup-token → openclaw models auth login --provider anthropic

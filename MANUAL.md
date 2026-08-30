@@ -52,11 +52,12 @@ OpenClaw Gateway  ── launchd: ai.openclaw.gateway
 
 | 用途 | モデル | 認証 |
 |---|---|---|
-| 対話（Slack DM でクゥと会話） | `ollama/qwen3.6:35b-mlx`（fallback `ollama/qwen3.8:27b-mlx`） | 不要（ローカル） |
+| 対話（Slack DM でクゥと会話） | `anthropic/claude-haiku-4-5`（fallback `ollama/qwen3.6:35b-mlx`） | Anthropic（cron と同じ setup-token） |
 | cron ダイジェスト | `anthropic/claude-sonnet-5`（fallback `anthropic/claude-haiku-4-5`） | `claude setup-token` → `openclaw models auth login --provider anthropic`（「Anthropic setup-token」を選択） |
 
-- 対話モデル選定の経緯: `ornith-1.5:35b` は「No response requested.」定型句を返す不具合、
-  `nemotron-3.5-lightning:30b-mlx` はツールを大量ループして空応答。`qwen3.6:35b-mlx` が最良だった。
+- 対話モデル選定の経緯: ローカル勢（`ornith-1.5:35b`=「No response requested.」/ `nemotron`=ツール30回ループ /
+  `qwen3.6:35b-mlx`=観測値ランキングで幻覚＋中国語混入）はいずれも日本語エージェント用途に不向き。
+  `claude-haiku-4-5` に移行（8〜10秒・正確）。fallback の qwen3.6 は課金枠切れ時の劣化用。
 - ローカルモデルの `num_ctx` はモデル既定（qwen3.6 は 262144）だと KV キャッシュ肥大＋prompt処理が遅い。
   `agents.defaults.models.<ref>.params = { num_ctx: 32768, keep_alive: "60m" }` に設定。
   会話が長くなったら `openclaw sessions compact "<key>" --max-lines N` で圧縮。
@@ -168,7 +169,7 @@ python3 -c "import urllib.request,urllib.parse,json;print(json.loads(urllib.requ
 | `models auth login` が `No provider plugins found` | `plugins.allow` の排他リストが原因。`openclaw config unset plugins.allow` ＋ `openclaw plugins enable anthropic` |
 | web_search が `DuckDuckGo returned a bot-detection challenge` | SearXNG へ移行済み。SearXNG が落ちていれば `launchctl kickstart -k gui/$(id -u)/local.searxng` |
 | cron の model がいつのまにか ollama に戻る | 原因未特定・要監視。`openclaw cron get <id>` で確認し `--model` 再設定 |
-| クゥの気象ランキングに数値(mm/℃)が出ない・地点名が化ける | HTMLスクレイプ＋偽MCP＋幻覚。ランキングは **アメダス map JSON を自前集計**（`amedas/data/map/{stamp}.json` の `precipitation1h/3h/24h` を `amedastable.json` の `kjName` と結合してソート）。ルールは `~/.openclaw/workspace/TOOLS.md` に記載 |
+| クゥの気象ランキングに数値が出ない・地点名が化ける・幻覚 | JSON を自前パースさせず **`python3 ~/.openclaw/workspace/bin/jma_rank.py <temp|wind|precip24h|…> [top]`** を exec させる（TOOLS.md に明記）。ローカルモデルだと結局幻覚するので既定を `claude-haiku-4-5` に |
 | クゥの簡単な質問への応答が数分かかる | Slack DM セッションの履歴肥大（~87k tokens）。`openclaw sessions compact "agent:main:slack:direct:<uid>" --max-lines 8` ＋ `num_ctx` を 32768 に縮小（`agents.defaults.models.<ref>.params`）＋ `compaction.mode:safeguard`。1〜3秒に短縮 |
 
 詳細は `~/projects/openclaw_setup/TROUBLESHOOTING.md`。

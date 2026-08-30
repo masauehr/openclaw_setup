@@ -59,4 +59,5 @@ OpenClaw（セルフホスト型の個人用 AI アシスタント・ゲート�
 - ✅ 定期ダイジェスト cron 3本（気象/経済=毎日9・18時、AI=月曜9時、Slack DM 配信）＋ DuckDuckGo 検索有効化
 - ✅ Anthropic 追加（`claude setup-token`）。cron は `anthropic/claude-sonnet-5`、対話の既定は `ollama/qwen3.6:35b-mlx`
 - ✅ Web検索は自己ホスト **SearXNG**（`127.0.0.1:18899`、launchd 常駐）。DuckDuckGo のボット判定ブロックを回避
+- ✅ 対話の既定は `anthropic/claude-haiku-4-5`（ローカル勢は幻覚・中国語混入で断念、fallback は qwen3.6）。ランキングは `bin/jma_rank.py` を exec させる
 - ⏳ スリープ運用、平文シークレット（Gateway token / SearXNG secret_key）の扱い、pc_docs マニュアル化

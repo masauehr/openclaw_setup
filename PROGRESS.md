@@ -11,7 +11,7 @@
 |---|---|
 | OpenClaw 本体 | `2026.7.1-2`（npm グローバル `/opt/homebrew/lib/node_modules/openclaw`） |
 | Gateway | launchd 常駐 `ai.openclaw.gateway`（RunAtLoad/KeepAlive）／local・loopback・token auth・:18789 |
-| 既定モデル（対話） | `ollama/qwen3.6:35b-mlx`（fallback `ollama/qwen3.8:27b-mlx`）※ローカル・無料。ornith の「No response」対策で 8/30 変更 |
+| 既定モデル（対話） | `anthropic/claude-haiku-4-5`（fallback `ollama/qwen3.6:35b-mlx`）※ローカル勢は幻覚・中国語混入・遅延で断念（8/30） |
 | Web検索 | **自己ホスト SearXNG**（`127.0.0.1:18899`、launchd `local.searxng`）。`tools.web.search.provider=searxng`。キー不要・上限なし。8/30 移行完了 |
 | チャンネル | **Slack** 接続済み（WS `openclaw-test` / App「OpenClaw」/ health:healthy） |
 | オーナー | `commands.ownerAllowFrom = ["slack:U0XXXXXXXXX"]` |
@@ -54,6 +54,29 @@
 ---
 
 ## ログ
+
+### 2026-08-30 (14) — 対話モデルもローカルを断念 → claude-haiku-4-5／ランキング用スクリプト追加
+
+- **背景**: 「簡単な質問が遅い」の対処（セッション圧縮＋num_ctx）後も、ローカルモデルが
+  観測値ランキングで**幻覚**を連発（qwen3.6「気温5℃以上の地点ゼロ」/ ornith「風速5m/s以上ゼロ」
+  = 実際は高松33℃・奥尻10m/s）。中国語混入（风速・メスダ）、TOOLS.md の手順も守らない、20〜30秒
+- **切り分け**（同じ「風速ランキング」質問）:
+  | モデル | 時間 | 結果 |
+  |---|---|---|
+  | `ornith-1.5:35b`（clean session + num_ctx） | 31s | 幻覚「風速ゼロ」・日付も誤り |
+  | `qwen3.6:35b-mlx` | — | 幻覚＋中国語混入 |
+  | **`anthropic/claude-haiku-4-5`** | 8〜10s | **正確**（奥尻10.3m/s…、スクリプト実行、綺麗な日本語） |
+- **やったこと**:
+  - `~/.openclaw/workspace/bin/jma_rank.py` 追加（アメダス map JSON を集計する専用スクリプト。
+    `temp|wind|precip1h|precip3h|precip24h` 等）。TOOLS.md に「ランキングは JSON 自前パースせず
+    このスクリプトを exec」と明記
+  - **対話の既定を `anthropic/claude-haiku-4-5`** に（fallback `ollama/qwen3.6:35b-mlx` = 課金枠切れ時の劣化用）
+  - Slack DM セッションを `--max-lines 1` まで圧縮（ローカルモデル時代の幻覚ログを除去）
+- **結果**: 気温/風速ランキングとも 8〜10 秒で正確な実数値。日本語も自然
+- **コスト影響**: 対話・cron ともに Claude（Pro サブスク枠を共有）。多用すると枠に当たる可能性 →
+  その場合 fallback の qwen3.6 に自動降格（品質は落ちる）
+- **教訓**: ローカルモデル（ornith/qwen3.6/nemotron）は日本語のエージェント的ツール利用に不向き。
+  雑談以外は Claude が必要
 
 ### 2026-08-30 (13) — SearXNG を自己ホストして web_search を安定化
 
