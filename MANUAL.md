@@ -95,15 +95,20 @@ Docker 不使用の native 構成。DuckDuckGo（キー無し）がボット判�
 
 ## 定期ダイジェスト（OpenClaw cron）
 
-3ジョブ。すべて model=`anthropic/claude-sonnet-5` / fallback `anthropic/claude-haiku-4-5` /
+3ジョブ。すべて model=`anthropic/claude-haiku-4-5` / fallback `anthropic/claude-sonnet-5` /
 `--channel slack --to slack:U0XXXXXXXXX --announce --expect-final --tz Asia/Tokyo --timeout-seconds 1200`。
-実行時刻を数分ずつずらして同時実行を回避。
 
 | id（先頭） | name | スケジュール(JST) | 内容 |
 |---|---|---|---|
-| `445881d3` | `weather-jp-2x` | 毎日 09:00 / 18:00 | 日本の気象・防災（警報注意報・災害・台風・地震・津波・見通し） |
-| `b18e0f97` | `econ-daily-2x` | 毎日 09:05 / 18:05 | 日本株（日経・TOPIX）・為替・世界の経済指標/イベント |
-| `db8a0d0b` | `ai-weekly-digest` | 毎週月曜 09:10 | 週次 AI 動向ダイジェスト（幅広く俯瞰） |
+| `445881d3` | `weather-jp-am` | 毎日 07:30 | 日本の気象・防災（警報注意報・災害・台風・地震・津波・見通し） |
+| `b18e0f97` | `econ-jp-am` | 毎日 07:35 | 日本株（日経・TOPIX）・為替・世界の経済指標/イベント |
+| `db8a0d0b` | `ai-weekly-digest` | 毎週月曜 07:40 | 週次 AI 動向ダイジェスト（幅広く俯瞰） |
+
+**スケジュールを 07:30台にした理由**: 09時台はこの Mac の他の自動実行と重なる —
+`stock_analysis_local_daily`（毎日 09:00・Ollama）／`econ_digest_ollama`（金 09:00）／
+`ai_news`（土 09:00）／`weather_digest_ornith`（日 09:30）。OpenClaw digest は haiku（API）なので
+Ollama とは資源が別だが、fallback に Ollama を置くと GPU 競合するため fallback は sonnet にしてある。
+夕方(18時台)の実行は 8/30 に廃止（コスト・頻度削減）。
 
 - cron の `--model` override は `agents.defaults.models` allowlist に登録済みのモデルしか使えない。
   未登録だと即エラー `payload.model '…' rejected by agents.defaults.models allowlist`。

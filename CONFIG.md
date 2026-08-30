@@ -160,12 +160,17 @@ python3 -c "import urllib.request,urllib.parse,json;print(json.loads(urllib.requ
 
 | id（先頭） | name | cron (JST) | 内容 |
 |---|---|---|---|
-| `445881d3` | `weather-jp-2x` | `0 9,18 * * *` | 日本の気象・防災まとめ |
-| `b18e0f97` | `econ-daily-2x` | `5 9,18 * * *` | 日本株・為替・世界の経済指標/イベント |
-| `db8a0d0b` | `ai-weekly-digest` | `10 9 * * 1` | 週次 AI 動向ダイジェスト |
+| `445881d3` | `weather-jp-am` | `30 7 * * *`（毎日 07:30） | 日本の気象・防災まとめ |
+| `b18e0f97` | `econ-jp-am` | `35 7 * * *`（毎日 07:35） | 日本株・為替・世界の経済指標/イベント |
+| `db8a0d0b` | `ai-weekly-digest` | `40 7 * * 1`（月曜 07:40） | 週次 AI 動向ダイジェスト |
 
 共通オプション:
-`--model anthropic/claude-sonnet-5 --fallbacks anthropic/claude-haiku-4-5`
+`--model anthropic/claude-haiku-4-5 --fallbacks anthropic/claude-sonnet-5`
+
+> 8/30 変更: モデル sonnet→haiku（コスト減）／夕方(18時台)廃止／朝 09時台→07:30台
+> （09:00 は他の自動実行 `stock_analysis_local_daily`(毎日)・`econ_digest_ollama`(金)・`ai_news`(土)・
+>  `weather_digest_ornith`(日 09:30) と重なる。うち local な stock_analysis は Ollama GPU を使うため、
+>  OpenClaw digest の Ollama fallback は外し fallback を sonnet にした）。
 `--channel slack --to slack:U0XXXXXXXXX --announce --expect-final --tz Asia/Tokyo --timeout-seconds 1200`
 （`--announce` = エージェントが自力で送れない場合スケジューラが最終返信を代理配信）
 実行時刻は数分ずつずらして同時実行を回避（1台の Ollama で複数ローカル推論が詰まった対策の名残）。

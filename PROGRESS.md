@@ -19,7 +19,7 @@
 | エージェント identity | 名前「クゥ」/ 黒猫 / 🐈‍⬛（`IDENTITY.md`、ユーザーが Slack 経由で設定） |
 | プラグイン | `slack`（ClawHub）, `duckduckgo`（stock, Web検索用）を enable。`plugins.allow=["slack","duckduckgo"]` |
 | memory search | 無効（`memorySearch.enabled=false`。OpenAI キー不要化） |
-| 定期実行(cron) | 3ジョブ（下表）。**model=`anthropic/claude-sonnet-5`**（fallback haiku-4-5）。Slack DM 配信・テストOK |
+| 定期実行(cron) | 3ジョブ（下表）。**model=`anthropic/claude-haiku-4-5`**（fallback sonnet）。朝のみ・夕方廃止。8/30 変更 |
 | Anthropic | 追加済み（`claude setup-token` → `models auth login`「Anthropic setup-token」。cron 専用、対話既定は Ollama） |
 | プラグイン方針 | `plugins.allow` は**使わない**（排他リストが provider を巻き込むため解除）。必要な plugin は個別 enable |
 
