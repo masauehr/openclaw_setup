@@ -11,7 +11,8 @@
 |---|---|
 | OpenClaw 本体 | `2026.7.1-2`（npm グローバル `/opt/homebrew/lib/node_modules/openclaw`） |
 | Gateway | launchd 常駐 `ai.openclaw.gateway`（RunAtLoad/KeepAlive）／local・loopback・token auth・:18789 |
-| 既定モデル | `ollama/ornith-1.5:35b`（fallback `ollama/qwen3.8:27b-mlx`）※ローカル・無料だが遅い/不安定 |
+| 既定モデル（対話） | `ollama/qwen3.6:35b-mlx`（fallback `ollama/qwen3.8:27b-mlx`）※ローカル・無料。ornith の「No response」対策で 8/30 変更 |
+| Web検索 | `tools.web.search.provider=duckduckgo` だが **8/30 時点ボット判定でブロック中**（恒久対策 未決） |
 | チャンネル | **Slack** 接続済み（WS `openclaw-test` / App「OpenClaw」/ health:healthy） |
 | オーナー | `commands.ownerAllowFrom = ["slack:U0XXXXXXXXX"]` |
 | 応答言語 | 日本語（`~/.openclaw/workspace/SOUL.md` の Language セクション） |
@@ -53,6 +54,28 @@
 ---
 
 ## ログ
+
+### 2026-08-30 (12) — 対話用モデルの入れ替え検討＋DuckDuckGo 検索ブロック判明
+
+- **背景**: Slack でクゥに質問しても「No response requested.」しか返らない
+  → 原因は対話既定の `ollama/ornith-1.5:35b` が返信不要の定型句を吐く/中断する挙動（小型ローカルモデルの誤発火）
+- **モデル比較テスト**（`openclaw agent` で簡単な質問 / 散文推論 / web_fetch）:
+  | モデル | 簡単 | 散文推論 | ツール(web_fetch) | 「No response」バグ |
+  |---|---|---|---|---|
+  | `ornith-1.5:35b` | △ | ○ | ○ | ❌ 発生 |
+  | `nemotron-3.5-lightning:30b-mlx` | ○ | ○ | ❌ 30回ループ→空応答(2.5分) | 出ない |
+  | **`qwen3.6:35b-mlx`** | ○ | ✅ 9秒・良質 | ✅ 6秒・正確・完結 | 出ない |
+  → **対話既定を `ollama/qwen3.6:35b-mlx` に変更**（fallback は `ollama/qwen3.8:27b-mlx` のまま）
+- **重要な発見: DuckDuckGo `web_search` がボット判定でブロック**
+  `{"status":"error","tool":"web_search","error":"DuckDuckGo returned a bot-detection challenge."}` が連発。
+  今日のテスト連打が引き金。**cron の Claude ダイジェストにも影響する**（web_fetch で粘れば部分的に可）。
+  DDG キー無しは負荷で不安定 = 恒久運用に不向き
+- **未決**: web_search の恒久対策
+  - A: 検索APIキー（Brave 無料枠 月2000 / Tavily 無料枠）→ `openclaw config` で provider 指定
+  - B: ダイジェストのプロンプトを「検索」→「固定URL(JMA/アメダス/Yahoo) を web_fetch」に書き換え
+  - C: `jma-mcp` を認証設定（気象のみ。経済/AIは別途）
+  - D: DDG 回復待ち（数時間〜1日。恒久策にならず）
+- **次アクション**: 上記 A〜C を決めて web_search を安定化。決めるまで気象ダイジェストは精度が落ちる可能性
 
 ### 2026-08-30 (11) — 朝の定時実行が失敗 → 2原因を修正
 

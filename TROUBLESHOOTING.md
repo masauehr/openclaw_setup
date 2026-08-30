@@ -181,6 +181,29 @@
   ```
   定時実行のたびに `openclaw cron runs --id <id>` の `entries[].model` を点検するのが安全。
 
+### 2026-08-30 — Slack でクゥに質問すると「No response requested.」しか返らない
+
+- 症状: DM で普通に質問しても本文が「No response requested.」だけ。前ターンで `stop=aborted` も。
+- 原因: 対話既定の `ollama/ornith-1.5:35b` が、返信不要の定型句を出力したり中断する
+  （小型ローカルモデルがエージェント・プロトコル＝「話すべきでないとき黙る」等を誤発火）。
+- 対処: 既定モデルを替える。テストの結果 `ollama/qwen3.6:35b-mlx` が最良
+  （`nemotron-3.5-lightning:30b-mlx` はツールを30回ループして空応答になった）。
+  `openclaw models set ollama/qwen3.6:35b-mlx` → `openclaw daemon restart`。
+
+### 2026-08-30 — web_search が「DuckDuckGo returned a bot-detection challenge.」
+
+- 症状: `web_search` ツールが毎回
+  `{"status":"error","tool":"web_search","error":"DuckDuckGo returned a bot-detection challenge."}`。
+  エージェントが検索を諦めて `web_fetch`/`exec` を乱発しループ or 空応答。
+- 原因: DuckDuckGo 側のボット判定。短時間に多数の自動検索を投げると発火（テスト連打が引き金）。
+  キー無し DDG は負荷で不安定で、恒久運用には向かない。
+- 対処（恒久策・いずれか）:
+  - 検索 API キー: Brave Search API（無料枠 月2000）/ Tavily（無料枠）等を入れて
+    `tools.web.search.provider` をそれに変更
+  - ダイジェストのプロンプトを「検索」→「固定 URL（JMA/アメダス/Yahoo）を web_fetch」に書き換え
+  - `jma-mcp` を認証設定（気象は検索不要になる）
+- 一時対処: 数時間〜1日で DDG 判定は解除されることが多い（恒久策にならない）。
+
 ### （テンプレ）YYYY-MM-DD — 症状の1行要約
 
 - 症状:
