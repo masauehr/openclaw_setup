@@ -219,6 +219,25 @@
   `~/.openclaw/workspace/TOOLS.md` に「JMA データ取得のルール」として明記済み（HTMLスクレイプ禁止・偽MCP禁止）。
 - 検証: 2026-08-30 17:50 の24h降水量 → 勝山 328.0mm / 美山 302.5mm / 春江 282.0mm（福井の大雨）を正しく取得。
 
+### 2026-08-30 — Slack でクゥへの簡単な質問に数分かかる／タイムアウトする
+
+- 症状: 「今日は何日？」レベルの質問に 3 分以上（タイムアウト）。
+- 原因: Slack DM セッション（`agent:main:slack:direct:…`）の履歴が **~87,000 トークン**に肥大
+  （2日分のテスト＋気象/経済ダイジェストの配信テキストが蓄積）。毎ターン全履歴をローカルモデルで
+  再プロンプト処理 → prompt processing だけで 50 秒超。さらに ollama がモデル既定の
+  `num_ctx=262144` で読み込み、KV キャッシュが巨大。keep_alive 5 分で毎回コールドロード。
+- 対処:
+  1. セッション圧縮: `openclaw sessions compact "agent:main:slack:direct:<uid>" --max-lines 8`
+     （旧トランスクリプトは `.jsonl.bak.<ts>` に退避。269KB → 6KB に）
+  2. `openclaw config patch` で
+     `agents.defaults.models."ollama/qwen3.6:35b-mlx".params = { num_ctx: 32768, keep_alive: "60m" }`
+     （fallback の qwen3.8 も同様）
+  3. `agents.defaults.compaction = { mode: "safeguard", keepRecentTokens: 10000 }`（自動圧縮を早める）
+  4. `openclaw sessions cleanup`（不要なテストセッションを整理）
+- 結果: 簡単な質問が **1〜3 秒**に短縮。
+- 再発防止: num_ctx を絞ったことで自動圧縮が早く効く。ダイジェストの配信先を DM から別チャンネルに
+  分ければセッション汚染をさらに減らせる（未対応）。
+
 ### （テンプレ）YYYY-MM-DD — 症状の1行要約
 
 - 症状:

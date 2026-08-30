@@ -57,6 +57,9 @@ OpenClaw Gateway  ── launchd: ai.openclaw.gateway
 
 - 対話モデル選定の経緯: `ornith-1.5:35b` は「No response requested.」定型句を返す不具合、
   `nemotron-3.5-lightning:30b-mlx` はツールを大量ループして空応答。`qwen3.6:35b-mlx` が最良だった。
+- ローカルモデルの `num_ctx` はモデル既定（qwen3.6 は 262144）だと KV キャッシュ肥大＋prompt処理が遅い。
+  `agents.defaults.models.<ref>.params = { num_ctx: 32768, keep_alive: "60m" }` に設定。
+  会話が長くなったら `openclaw sessions compact "<key>" --max-lines N` で圧縮。
 - cron を Claude にした理由: ローカルモデルだと 1ラン 4〜16分・出力不安定・同時起動で AbortError が頻発。
   Claude だと 36〜90秒で安定。
 
@@ -166,6 +169,7 @@ python3 -c "import urllib.request,urllib.parse,json;print(json.loads(urllib.requ
 | web_search が `DuckDuckGo returned a bot-detection challenge` | SearXNG へ移行済み。SearXNG が落ちていれば `launchctl kickstart -k gui/$(id -u)/local.searxng` |
 | cron の model がいつのまにか ollama に戻る | 原因未特定・要監視。`openclaw cron get <id>` で確認し `--model` 再設定 |
 | クゥの気象ランキングに数値(mm/℃)が出ない・地点名が化ける | HTMLスクレイプ＋偽MCP＋幻覚。ランキングは **アメダス map JSON を自前集計**（`amedas/data/map/{stamp}.json` の `precipitation1h/3h/24h` を `amedastable.json` の `kjName` と結合してソート）。ルールは `~/.openclaw/workspace/TOOLS.md` に記載 |
+| クゥの簡単な質問への応答が数分かかる | Slack DM セッションの履歴肥大（~87k tokens）。`openclaw sessions compact "agent:main:slack:direct:<uid>" --max-lines 8` ＋ `num_ctx` を 32768 に縮小（`agents.defaults.models.<ref>.params`）＋ `compaction.mode:safeguard`。1〜3秒に短縮 |
 
 詳細は `~/projects/openclaw_setup/TROUBLESHOOTING.md`。
 
