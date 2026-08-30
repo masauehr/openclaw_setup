@@ -155,6 +155,32 @@
   openclaw daemon restart
   ```
 
+### 2026-08-30 — cron の web_search が「no web search provider is selected」
+
+- 症状: cron 実行の diagnostics に
+  `web_search tool requested in toolsAllow but no web search provider is selected`。
+  digest は出るが web_search 由来の鮮度が落ちる。
+- 原因: `duckduckgo` プラグインが `loaded` でも、`tools.web.search.provider` の**明示選択**が別途必要。
+  キー無しプロバイダは「available API keys からの自動検出」に引っかからない。
+- 対処:
+  ```
+  printf '%s' '{ "tools": { "web": { "search": { "enabled": true, "provider": "duckduckgo" } } } }' | openclaw config patch --stdin
+  openclaw daemon restart
+  ```
+  確認: `openclaw config get tools.web.search` → `{enabled:true, provider:"duckduckgo"}`
+
+### 2026-08-30 — cron ジョブの model override がいつの間にか既定(ollama)へ巻き戻る
+
+- 症状: `--model anthropic/claude-sonnet-5` を設定した weather ジョブが、翌朝の定時実行で
+  `ollama/ornith-1.5:35b` で走っていた（同時に設定した econ/AI は保持）。
+- 原因: 未特定。daemon restart 単体では再現せず。要監視。
+- 対処/確認:
+  ```
+  openclaw cron get <id> | grep -A2 '"payload"'      # payload.model を確認
+  openclaw cron edit <id> --model anthropic/claude-sonnet-5 --fallbacks anthropic/claude-haiku-4-5
+  ```
+  定時実行のたびに `openclaw cron runs --id <id>` の `entries[].model` を点検するのが安全。
+
 ### （テンプレ）YYYY-MM-DD — 症状の1行要約
 
 - 症状:

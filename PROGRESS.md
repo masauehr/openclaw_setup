@@ -54,6 +54,26 @@
 
 ## ログ
 
+### 2026-08-30 (11) — 朝の定時実行が失敗 → 2原因を修正
+
+- **症状**: 8/30 の定時実行で weather が `ornith-1.5:35b` で走り「No response requested.」、
+  econ 9:05 が `AbortError`（※econ は 9:21 に claude-sonnet-5 で自動リトライ成功していた）
+- **原因1**: **weather ジョブの `payload.model` が `ollama/ornith-1.5:35b` に戻っていた**
+  （econ / AI は `anthropic/claude-sonnet-5` を保持。weather だけ。前夜 20:16 は sonnet で成功していたので
+  20:16〜翌9:04 の間に何かで巻き戻った。確たる原因は未特定＝**要監視**）
+  → `openclaw cron edit 445881d3… --model anthropic/claude-sonnet-5 --fallbacks anthropic/claude-haiku-4-5` で再設定。
+  daemon restart を挟んでも保持されることを確認
+- **原因2**: cron 実行の診断に
+  `web_search tool requested in toolsAllow but no web search provider is selected`。
+  duckduckgo プラグインは `loaded` でも、**`tools.web.search.provider` の明示選択が別途必要**だった
+  （プラグインの loaded ≠ web_search プロバイダとして選択済み）
+  → `openclaw config patch` で `tools.web.search = { enabled: true, provider: "duckduckgo" }`
+- **結果**: weather をテスト実行 → status ok / claude-sonnet-5 / 90秒 / Slack 配信。
+  内容も実データ（福井の大雨特別警報レベル5・荒川氾濫、台風22/23号、地震一覧）
+- **メモ**: 気象庁の警報 JSON API（`bosai/warning/data/warning/*.json`）が一部 CDN キャッシュで
+  古い日付（5月）を返す事象をエージェントが報告。概況テキスト API ＋ 報道で補完している
+- **次アクション**: 明朝 9:00/9:05 の定時実行を Slack で確認（model 巻き戻りが再発しないか）
+
 ### 2026-08-29 (10) — Anthropic 追加・cron を claude-sonnet-5 に切替（ダイジェスト実運用化）
 
 - **経緯**: 18:00 の初回定時実行で weather / econ が両方 `AbortError`（同時起動＋ローカルモデルが重い）
