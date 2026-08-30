@@ -100,11 +100,11 @@ Docker 不使用の native 構成。DuckDuckGo（キー無し）がボット判�
 
 | id（先頭） | name | スケジュール(JST) | 内容 |
 |---|---|---|---|
-| `445881d3` | `weather-jp-am` | 毎日 07:30 | 日本の気象・防災（警報注意報・災害・台風・地震・津波・見通し） |
-| `b18e0f97` | `econ-jp-am` | 毎日 07:35 | 日本株（日経・TOPIX）・為替・世界の経済指標/イベント |
-| `db8a0d0b` | `ai-weekly-digest` | 毎週月曜 07:40 | 週次 AI 動向ダイジェスト（幅広く俯瞰） |
+| `445881d3` | `weather-jp-am` | 毎日 09:10 | 日本の気象・防災（警報注意報・災害・台風・地震・津波・見通し） |
+| `b18e0f97` | `econ-jp-am` | 毎日 09:13 | 日本株（日経・TOPIX）・為替・世界の経済指標/イベント |
+| `db8a0d0b` | `ai-weekly-digest` | 毎週月曜 09:16 | 週次 AI 動向ダイジェスト（幅広く俯瞰） |
 
-**スケジュールを 07:30台にした理由**: 09時台はこの Mac の他の自動実行と重なる —
+**スケジュールを 09:10台にした理由**: 09時台はこの Mac の他の自動実行と重なる —
 `stock_analysis_local_daily`（毎日 09:00・Ollama）／`econ_digest_ollama`（金 09:00）／
 `ai_news`（土 09:00）／`weather_digest_ornith`（日 09:30）。OpenClaw digest は haiku（API）なので
 Ollama とは資源が別だが、fallback に Ollama を置くと GPU 競合するため fallback は sonnet にしてある。

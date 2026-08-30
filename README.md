@@ -56,8 +56,8 @@ OpenClaw（セルフホスト型の個人用 AI アシスタント・ゲート�
 - ✅ モデル: ローカル `ollama/ornith-1.5:35b`（fallback `qwen3.8:27b-mlx`）
 - ✅ Slack 接続（WS `openclaw-test`、health:healthy）、オーナー = `slack:U0XXXXXXXXX`
 - ✅ 日本語を既定応答に（`SOUL.md`）／エージェント名「クゥ」🐈‍⬛
-- ✅ 定期ダイジェスト cron 3本（気象 07:30／経済 07:35／AI週次 月曜07:40、Slack DM 配信、model=haiku、夕方廃止）
-- ✅ Anthropic 追加（`claude setup-token`）。cron は `anthropic/claude-sonnet-5`、対話の既定は `ollama/qwen3.6:35b-mlx`
+- ✅ 定期ダイジェスト cron 3本（気象 09:10／経済 09:13／AI週次 月曜09:16、Slack DM 配信、model=haiku、夕方廃止）
+- ✅ Anthropic 追加（`claude setup-token`）。対話・cron とも `anthropic/claude-haiku-4-5`（fallback は対話=qwen3.6 / cron=sonnet）
 - ✅ Web検索は自己ホスト **SearXNG**（`127.0.0.1:18899`、launchd 常駐）。DuckDuckGo のボット判定ブロックを回避
 - ✅ 対話の既定は `anthropic/claude-haiku-4-5`（ローカル勢は幻覚・中国語混入で断念、fallback は qwen3.6）。ランキングは `bin/jma_rank.py` を exec させる
 - ⏳ スリープ運用、平文シークレット（Gateway token / SearXNG secret_key）の扱い、pc_docs マニュアル化
