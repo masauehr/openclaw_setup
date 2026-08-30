@@ -207,6 +207,18 @@
 - **2026-08-30 対応済み**: SearXNG を `127.0.0.1:18899` に立て `provider=searxng` に変更。
   econ ダイジェストが 16 分 error → 40 秒 ok に改善。
 
+### 2026-08-30 — クゥの「降水量ランキング」に数値(mm)が出ない／地点名が化ける
+
+- 症状: Slack で降水量ランキングを頼むと「大量の雨」「（佐貫）」等の空欄・幻覚、地点名に中国語漢字混入。
+  「jma-mcp 経由」と称するが実際は未接続。
+- 原因: (1) JMA の「最新の気象データ」ランキングページは **JS 描画で生 HTML に数値が無い** のにスクレイプ、
+  (2) `jma-mcp-render` MCP は未認証なのに使ったことにする、(3) 取れないので幻覚で埋める。
+- 対処: ランキングは **アメダス map JSON を自前集計** する。
+  `latest_time.txt` → `amedas/data/map/{YYYYMMDDHHMMSS}.json`（`precipitation1h/3h/24h` 等）→
+  `amedas/const/amedastable.json` の `kjName` で地点名 → 降順ソート。
+  `~/.openclaw/workspace/TOOLS.md` に「JMA データ取得のルール」として明記済み（HTMLスクレイプ禁止・偽MCP禁止）。
+- 検証: 2026-08-30 17:50 の24h降水量 → 勝山 328.0mm / 美山 302.5mm / 春江 282.0mm（福井の大雨）を正しく取得。
+
 ### （テンプレ）YYYY-MM-DD — 症状の1行要約
 
 - 症状:

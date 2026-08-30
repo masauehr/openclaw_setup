@@ -165,6 +165,7 @@ python3 -c "import urllib.request,urllib.parse,json;print(json.loads(urllib.requ
 | `models auth login` が `No provider plugins found` | `plugins.allow` の排他リストが原因。`openclaw config unset plugins.allow` ＋ `openclaw plugins enable anthropic` |
 | web_search が `DuckDuckGo returned a bot-detection challenge` | SearXNG へ移行済み。SearXNG が落ちていれば `launchctl kickstart -k gui/$(id -u)/local.searxng` |
 | cron の model がいつのまにか ollama に戻る | 原因未特定・要監視。`openclaw cron get <id>` で確認し `--model` 再設定 |
+| クゥの気象ランキングに数値(mm/℃)が出ない・地点名が化ける | HTMLスクレイプ＋偽MCP＋幻覚。ランキングは **アメダス map JSON を自前集計**（`amedas/data/map/{stamp}.json` の `precipitation1h/3h/24h` を `amedastable.json` の `kjName` と結合してソート）。ルールは `~/.openclaw/workspace/TOOLS.md` に記載 |
 
 詳細は `~/projects/openclaw_setup/TROUBLESHOOTING.md`。
 
