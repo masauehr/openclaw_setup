@@ -83,19 +83,72 @@ OpenClaw バージョン: `2026.7.1-2 (0790d9f)`
 
 ---
 
-## プラグイン（2026-08-29 実測）
+## プラグイン（2026-08-30 実測）
 
 | プラグイン | id | 種別 | 用途 |
 |---|---|---|---|
 | `@openclaw/slack` | `slack` | ClawHub 公式 | Slack チャンネル。`~/.openclaw/extensions/slack` |
-| `@openclaw/duckduckgo-plugin` | `duckduckgo` | stock（同梱） | Web 検索（キー不要）。cron ダイジェスト用 |
 | `@openclaw/anthropic-provider` | `anthropic` | stock（同梱） | Anthropic プロバイダ。cron を Claude で回すため |
+| `@openclaw/searxng-plugin` | `searxng` | ClawHub 公式 | Web 検索を自己ホスト SearXNG に接続（下記「Web検索」節） |
+| `@openclaw/duckduckgo-plugin` | `duckduckgo` | stock（同梱） | 旧 Web 検索。ボット判定で不安定 → SearXNG に移行。loaded のまま放置（未使用） |
 
 > ⚠️ **`plugins.allow` は使わない**。設定すると allowlist が**排他的**になり、
 > stock の provider プラグイン（anthropic 等）まで巻き込んでブロックする
 > （`models auth login` が `No provider plugins found` で失敗した）。
 > 一度 `openclaw config unset plugins.allow` で解除済み。非バンドル plugin の
 > 起動時 warning は無害。個別に `openclaw plugins enable <id>` すれば足りる。
+
+---
+
+## Web 検索（SearXNG 自己ホスト）— 2026-08-30 実測
+
+DuckDuckGo（キー無し）がボット判定で不安定なため、**ローカルで SearXNG を立てて**
+`web_search` のバックエンドにした。キー不要・クエリ上限なし。
+
+### SearXNG 本体（OpenClaw とは別プロセス）
+
+| 項目 | 値 |
+|---|---|
+| ソース | `~/searxng/src`（`git clone --depth 1 github.com/searxng/searxng`） |
+| Python 環境 | `~/searxng/.venv`（`uv venv --python 3.12` の隔離 CPython。system/brew に非依存） |
+| 導入 | `uv pip install -r requirements.txt -r requirements-server.txt` → `uv pip install -e . --no-build-isolation`※ |
+| 設定 | `~/searxng/settings.yml`（`chmod 600`。`secret_key` あり＝**コミット禁止**、リポジトリ外） |
+| 待受 | `http://127.0.0.1:18899`（loopback のみ）。`search.formats: [html, json]` を有効化（JSON API 必須） |
+| `limiter` | `false`（valkey/redis 不要にするため。単一ユーザー loopback なので可） |
+| 起動 | `~/searxng/run.sh`（`SEARXNG_SETTINGS_PATH` を渡して `searxng-run` を exec） |
+| 常駐 | launchd `~/Library/LaunchAgents/local.searxng.plist`（Label `local.searxng`、RunAtLoad/KeepAlive） |
+| ログ | `~/searxng/logs/searxng.log` / `searxng.err.log` |
+
+※ SearXNG の `setup.py` がビルド時に `msgspec` を import するため、先に requirements を入れて
+`--no-build-isolation` で editable install する必要がある。
+
+操作:
+```
+launchctl list | grep searxng
+launchctl kickstart -k gui/$(id -u)/local.searxng      # 再起動
+launchctl bootout gui/$(id -u)/local.searxng           # 停止・解除
+# JSON API 動作確認（curl 不使用）:
+python3 -c "import urllib.request,urllib.parse,json;print(json.loads(urllib.request.urlopen('http://127.0.0.1:18899/search?'+urllib.parse.urlencode({'q':'test','format':'json'})).read()).get('results',[])[:1])"
+```
+- 一部エンジン（wikidata / ahmia 等）は init に失敗するが**コア検索は動く**（非致命）。
+- `~/searxng` を丸ごと消せばアンインストール（＋ plist を bootout・削除）。
+
+### OpenClaw 側の接続設定
+
+```json5
+{
+  tools: { web: { search: { enabled: true, provider: "searxng" } } },
+  plugins: { entries: { searxng: { config: { webSearch: {
+    baseUrl: "http://127.0.0.1:18899",
+    categories: "general,news",
+    language: "ja"
+  } } } } }
+}
+```
+- プラグイン: `openclaw plugins install clawhub:@openclaw/searxng-plugin` → `openclaw plugins enable searxng` → `openclaw daemon restart`
+- 確認: `openclaw config get tools.web.search` → `{enabled:true, provider:"searxng"}`
+- テスト: `openclaw agent … -m "web_searchで…を検索して"` で実結果が返る／
+  `openclaw cron run b18e0f97-… --wait --expect-final` で econ ダイジェストが 40 秒で配信
 
 操作: `openclaw plugins list [--json]` / `plugins enable <id>` / `plugins inspect <id>` → `openclaw daemon restart`
 

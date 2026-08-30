@@ -12,7 +12,7 @@
 | OpenClaw 本体 | `2026.7.1-2`（npm グローバル `/opt/homebrew/lib/node_modules/openclaw`） |
 | Gateway | launchd 常駐 `ai.openclaw.gateway`（RunAtLoad/KeepAlive）／local・loopback・token auth・:18789 |
 | 既定モデル（対話） | `ollama/qwen3.6:35b-mlx`（fallback `ollama/qwen3.8:27b-mlx`）※ローカル・無料。ornith の「No response」対策で 8/30 変更 |
-| Web検索 | `tools.web.search.provider=duckduckgo` だが **8/30 時点ボット判定でブロック中**（恒久対策 未決） |
+| Web検索 | **自己ホスト SearXNG**（`127.0.0.1:18899`、launchd `local.searxng`）。`tools.web.search.provider=searxng`。キー不要・上限なし。8/30 移行完了 |
 | チャンネル | **Slack** 接続済み（WS `openclaw-test` / App「OpenClaw」/ health:healthy） |
 | オーナー | `commands.ownerAllowFrom = ["slack:U0XXXXXXXXX"]` |
 | 応答言語 | 日本語（`~/.openclaw/workspace/SOUL.md` の Language セクション） |
@@ -54,6 +54,29 @@
 ---
 
 ## ログ
+
+### 2026-08-30 (13) — SearXNG を自己ホストして web_search を安定化
+
+- **やったこと**:
+  - この Mac に Docker/podman が無いので **native インストール**:
+    `git clone` → `uv venv --python 3.12`（隔離CPython、system非依存）→
+    `uv pip install -r requirements*.txt` → `uv pip install -e . --no-build-isolation`
+    （※`setup.py` が `msgspec` を import するため no-build-isolation 必須）
+  - `~/searxng/settings.yml`: `127.0.0.1:18899` / `search.formats:[html,json]` / `limiter:false` / secret_key
+  - launchd `~/Library/LaunchAgents/local.searxng.plist`（`local.searxng`、RunAtLoad/KeepAlive）で常駐化
+  - OpenClaw: `openclaw plugins install clawhub:@openclaw/searxng-plugin` → enable →
+    `config patch` で `tools.web.search.provider=searxng` ＋
+    `plugins.entries.searxng.config.webSearch.baseUrl=http://127.0.0.1:18899`（categories=general,news / language=ja）
+- **結果**:
+  - SearXNG JSON API 直: 200・20件（日本語ソース）。ボット判定なし
+  - OpenClaw `web_search` 経由: 23秒で実結果
+  - **econ ダイジェスト（今朝 16分で error だったもの）→ テスト実行 40秒・status ok・Slack 配信・実データ入り**
+  - キー不要・クエリ上限なし。DuckDuckGo からの移行完了（duckduckgo プラグインは loaded のまま未使用）
+- **注意/残**:
+  - SearXNG も Mac 起動中のみ稼働（OpenClaw と同じスリープ制約）
+  - 一部エンジン（wikidata 等）は init 失敗するがコア検索は動作（非致命）
+  - `~/searxng/settings.yml` に secret_key。リポジトリ外なので OK だが取り扱い注意
+  - SearXNG のバージョン更新は `cd ~/searxng/src && git pull && uv pip install -e . --no-build-isolation` → kickstart
 
 ### 2026-08-30 (12) — 対話用モデルの入れ替え検討＋DuckDuckGo 検索ブロック判明
 

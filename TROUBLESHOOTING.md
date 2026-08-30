@@ -198,11 +198,14 @@
 - 原因: DuckDuckGo 側のボット判定。短時間に多数の自動検索を投げると発火（テスト連打が引き金）。
   キー無し DDG は負荷で不安定で、恒久運用には向かない。
 - 対処（恒久策・いずれか）:
-  - 検索 API キー: Brave Search API（無料枠 月2000）/ Tavily（無料枠）等を入れて
+  - 検索 API キー: Brave Search API（新規は実質有料化）/ Tavily（無料枠 1,000/月）等を入れて
     `tools.web.search.provider` をそれに変更
+  - **自己ホスト SearXNG**（採用。CONFIG.md「Web 検索」節）。キー不要・上限なし
   - ダイジェストのプロンプトを「検索」→「固定 URL（JMA/アメダス/Yahoo）を web_fetch」に書き換え
   - `jma-mcp` を認証設定（気象は検索不要になる）
 - 一時対処: 数時間〜1日で DDG 判定は解除されることが多い（恒久策にならない）。
+- **2026-08-30 対応済み**: SearXNG を `127.0.0.1:18899` に立て `provider=searxng` に変更。
+  econ ダイジェストが 16 分 error → 40 秒 ok に改善。
 
 ### （テンプレ）YYYY-MM-DD — 症状の1行要約
 
