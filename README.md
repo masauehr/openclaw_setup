@@ -3,11 +3,14 @@
 OpenClaw（セルフホスト型の個人用 AI アシスタント・ゲートウェイ）を
 このMacに導入し、運用に乗せるまでの作業をまとめるプロジェクト。
 
+- **運用マニュアル（現行構成の全体像）** → [MANUAL.md](MANUAL.md)
 - **運用開始までの進捗ログ** → [PROGRESS.md](PROGRESS.md)
 - **インストール手順** → [INSTALL.md](INSTALL.md)
 - **設定リファレンス** → [CONFIG.md](CONFIG.md)
 - **チャットアプリ連携** → [CHANNELS.md](CHANNELS.md)
 - **トラブルシューティング** → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
+> [MANUAL.md](MANUAL.md) は `pc_docs/manuals/automation/openclaw.md` のコピー（自己完結のため同梱）。両方を更新すること。
 
 > ⚠️ このプロジェクトは 2026-08-29 開始。OpenClaw は 2026年1月末に現名称へ改称された
 > 新しめのソフトで、公式ドキュメントの内容が変わりやすい。各手順は必ず
