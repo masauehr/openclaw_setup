@@ -5,55 +5,87 @@
 
 ---
 
-## 現在の到達点サマリ（2026-08-29 15:00 JST 時点）
+## 現在の到達点サマリ（2026-08-30 更新）
+
+正本マニュアル: [MANUAL.md](MANUAL.md)（= `pc_docs/manuals/automation/openclaw.md` のコピー）
 
 | 項目 | 状態 |
 |---|---|
 | OpenClaw 本体 | `2026.7.1-2`（npm グローバル `/opt/homebrew/lib/node_modules/openclaw`） |
 | Gateway | launchd 常駐 `ai.openclaw.gateway`（RunAtLoad/KeepAlive）／local・loopback・token auth・:18789 |
-| 既定モデル（対話） | `anthropic/claude-haiku-4-5`（fallback `ollama/qwen3.6:35b-mlx`）※ローカル勢は幻覚・中国語混入・遅延で断念（8/30） |
-| Web検索 | **自己ホスト SearXNG**（`127.0.0.1:18899`、launchd `local.searxng`）。`tools.web.search.provider=searxng`。キー不要・上限なし。8/30 移行完了 |
-| チャンネル | **Slack** 接続済み（WS `openclaw-test` / App「OpenClaw」/ health:healthy） |
+| **対話モデル** | `anthropic/claude-haiku-4-5`（fallback `ollama/qwen3.6:35b-mlx`）。ローカル勢は幻覚・中国語混入・遅延で断念（8/30） |
+| **cron モデル** | `anthropic/claude-haiku-4-5`（fallback `anthropic/claude-sonnet-5`）。8/30 sonnet→haiku（コスト減） |
+| Anthropic 認証 | `claude setup-token` → `openclaw models auth login --provider anthropic`（「Anthropic setup-token」選択）。プロファイル `anthropic:default (token)` |
+| Web検索 | **自己ホスト SearXNG**（`127.0.0.1:18899`、launchd `local.searxng`）。`tools.web.search.provider=searxng`。キー不要・上限なし（8/30 DuckDuckGo から移行） |
+| チャンネル | **Slack** 接続済み（WS `openclaw-test` / App「OpenClaw」/ Socket Mode / health:healthy） |
 | オーナー | `commands.ownerAllowFrom = ["slack:U0XXXXXXXXX"]` |
-| 応答言語 | 日本語（`~/.openclaw/workspace/SOUL.md` の Language セクション） |
-| エージェント identity | 名前「クゥ」/ 黒猫 / 🐈‍⬛（`IDENTITY.md`、ユーザーが Slack 経由で設定） |
-| プラグイン | `slack`（ClawHub）, `duckduckgo`（stock, Web検索用）を enable。`plugins.allow=["slack","duckduckgo"]` |
-| memory search | 無効（`memorySearch.enabled=false`。OpenAI キー不要化） |
-| 定期実行(cron) | 3ジョブ（下表）。**model=`anthropic/claude-haiku-4-5`**（fallback sonnet）。朝のみ・夕方廃止。8/30 変更 |
-| Anthropic | 追加済み（`claude setup-token` → `models auth login`「Anthropic setup-token」。cron 専用、対話既定は Ollama） |
-| プラグイン方針 | `plugins.allow` は**使わない**（排他リストが provider を巻き込むため解除）。必要な plugin は個別 enable |
+| 応答言語 | 日本語固定（`~/.openclaw/workspace/SOUL.md` の Language セクション） |
+| エージェント identity | 名前「クゥ」/ 黒猫 / 🐈‍⬛（`~/.openclaw/workspace/IDENTITY.md`） |
+| プラグイン | `slack` / `anthropic` / `searxng` を enable。`duckduckgo` は loaded だが未使用。**`plugins.allow` は使わない**（排他リストが provider を巻き込むため 8/30 に `config unset`） |
+| memory search | 無効（`memorySearch.enabled=false`） |
+| ローカルモデル調整 | `agents.defaults.models."ollama/qwen3.6:35b-mlx".params = { num_ctx: 32768, keep_alive: "60m" }`（fallback 用。既定 262144 は遅い） |
+| セッション | `agents.defaults.compaction = { mode: "safeguard", keepRecentTokens: 10000 }`。肥大時は `openclaw sessions compact "<key>" --max-lines N` |
+| 補助スクリプト | `~/.openclaw/workspace/bin/jma_rank.py`（アメダス観測値ランキング。TOOLS.md で exec 指示） |
 
-### 登録済み cron ジョブ（すべて model=`anthropic/claude-sonnet-5` / fallback `anthropic/claude-haiku-4-5`）
+### 登録済み cron ジョブ（model=`anthropic/claude-haiku-4-5` / fallback `anthropic/claude-sonnet-5`）
 
 | id (先頭) | name | schedule (JST) | 内容 |
 |---|---|---|---|
-| `445881d3` | `weather-jp-2x` | `0 9,18 * * *` | 日本の気象・防災まとめ |
-| `b18e0f97` | `econ-daily-2x` | `5 9,18 * * *` | 日本株・為替・世界の経済指標/イベント |
-| `db8a0d0b` | `ai-weekly-digest` | `10 9 * * 1` | 週次 AI 動向ダイジェスト |
+| `445881d3` | `weather-jp-am` | `10 9 * * *`（毎日 09:10） | 日本の気象・防災まとめ |
+| `b18e0f97` | `econ-jp-am` | `13 9 * * *`（毎日 09:13） | 日本株・為替・世界の経済指標/イベント |
+| `db8a0d0b` | `ai-weekly-digest` | `16 9 * * 1`（月曜 09:16） | 週次 AI 動向ダイジェスト |
 
 共通: `--channel slack --to slack:U0XXXXXXXXX --announce --expect-final --tz Asia/Tokyo --timeout-seconds 1200`。
-実行時刻を数分ずつずらして同時実行を回避。テスト実行は 36〜42 秒で Slack 配信成功。
 操作: `openclaw cron list|get <id>|edit <id>|run <id> --wait --expect-final|rm <id>`。
 
-> cron のモデル override は `agents.defaults.models` allowlist に載っている必要がある
-> （`openclaw config patch --stdin` で `anthropic/claude-sonnet-5` 等を追加済み）。
+- **8/30 変更**: sonnet→haiku ／ 夕方(18時台)廃止 ／ 朝を 09:00直撃→**09:10-09:16**
+  （他自動実行を回避: `stock_analysis_local_daily` 毎日09:00・`econ_digest_ollama` 金09:00・`ai_news` 土09:00・
+  `weather_digest_ornith` 日09:30・`stock_analysis` 毎日10:00〈Claude CLI〉）。
+- cron の `--model` は `agents.defaults.models` allowlist に登録が必要
+  （`config patch --stdin` で `anthropic/claude-haiku-4-5` / `claude-sonnet-5` 追加済み）。
 
 ## 未解決の課題・確認事項
 
-- [x] ~~ダイジェストの品質/速度~~ → Anthropic `claude-sonnet-5` に切替。テストで 36〜42 秒・実用品質
-- [ ] **明朝 9:00 / 9:05 の自動実行を Slack で確認**（Anthropic 切替後の初の定時ラン）
-- [ ] **クゥ（Slack のエージェント）に「cron は Claude Code 側で設定済み」を伝える** — 本人が別途登録して
-      重複しないように。19:03 頃 クゥが Slack で JMA-MCP / Yahoo 天気を提案していた（並行作業になっている）
-- [ ] Claude Pro サブスクの利用枠消費（1日 5ラン想定）。枠が気になれば `--model anthropic/claude-haiku-4-5` に
+- [ ] **09:10-09:16 の初回定時実行を Slack で確認**（初回は翌 09:10。`openclaw cron runs --id <id>` で `status`/`model` 点検）
+- [ ] cron ジョブの `--model` がまれに既定へ巻き戻る事象（8/30 (11) で一度発生、原因未特定＝要監視）
+- [ ] Claude Pro サブスク枠の消費（対話＋cron＋他プロジェクトの `*_haiku` と共有）。枠切れ時は fallback（対話→qwen3.6 / cron→sonnet）
+- [ ] スリープ運用（OpenClaw も SearXNG も Mac 起動中のみ。常用するなら `caffeinate` / 常時起動機）
+- [ ] 平文シークレット: `~/.openclaw/openclaw.json`（Gateway/Slack token）、認証ストア sqlite（Anthropic token）、
+      `~/searxng/settings.yml`（secret_key）。いずれもリポジトリ外。SecretRef 化は未対応
 - [ ] ポート 18789 の常時開放の是非（現状 loopback のみ。リモートは Tailscale 検討）
-- [ ] スリープ運用方針（Mac 起動中のみ稼働。常用するなら `caffeinate` / 常時起動機）
-- [ ] doctor: 「openclaw.json に平文シークレット」警告（Gateway トークン ＋ Anthropic token）。SecretRef 化を検討
 - [ ] doctor: Skills の Missing requirements 33 件（`openclaw doctor --fix` で未使用整理）
-- [ ] 運用が安定したら pc_docs にマニュアル化（このプロジェクトの終了条件）
+- [x] ~~pc_docs にマニュアル化~~ → `pc_docs/manuals/automation/openclaw.md` 作成済み（[MANUAL.md](MANUAL.md) に同梱）
 
 ---
 
 ## ログ
+
+### 2026-08-30 (16) — cron を haiku 化・夕方廃止・09:10-09:16 へ
+
+- **経緯**: ローカル断念決定を受け、定期実行のコスト削減と他自動実行との重複回避
+- **やったこと**:
+  - cron 3ジョブを `--model anthropic/claude-haiku-4-5 --fallbacks anthropic/claude-sonnet-5`
+    （Ollama fallback は GPU 競合の元なので外した）
+  - 夕方(18時台)の実行を廃止 → 気象・経済は朝1回に
+  - 当初 07:30台にしたが「7時台はネット未接続」との指摘 → **09:10 / 09:13 / 09:16 (月)** に確定
+  - このMacの 09:00-12:00 の他 launchd を全列挙して隙間を特定
+    （09:00 `stock_analysis_local_daily` 毎日ほか、10:00 `stock_analysis` Claude CLI、10:30/11:00/12:00 各種）
+  - ジョブ名を `weather-jp-am` / `econ-jp-am` に改名
+- **結果**: 実行回数 5/日 → 2〜3/日。09:10台は毎日空いており、10:00 の Claude CLI ジョブとも時間が離れている
+- **次アクション**: 翌 09:10 の初回定時実行を Slack で確認
+
+### 2026-08-30 (15) — 「簡単な質問が遅い」の原因＝セッション肥大、を修正
+
+- **症状**: Slack でクゥに簡単な質問 → 3分超（タイムアウト）
+- **原因**: Slack DM セッション（`agent:main:slack:direct:…`）の履歴が **~87,000 トークン**に肥大
+  （2日分のテスト＋ダイジェスト配信テキスト）。毎ターン全履歴を再プロンプト処理。
+  加えて ollama がモデル既定 `num_ctx=262144` で読み込み KV キャッシュ肥大。keep_alive 5分で毎回コールドロード
+- **やったこと**:
+  - `openclaw sessions compact "agent:main:slack:direct:<uid>" --max-lines N`（269KB → 6KB。旧履歴は `.bak` 退避）
+  - `agents.defaults.models."ollama/qwen3.6:35b-mlx".params = { num_ctx: 32768, keep_alive: "60m" }`（qwen3.8 も）
+  - `agents.defaults.compaction = { mode: "safeguard", keepRecentTokens: 10000 }`
+  - `openclaw sessions cleanup`
+- **結果**: qwen3.6 で簡単な質問が 3分 → **1〜3 秒**。ただし観測値ランキング等では依然幻覚（→ (14) で haiku に）
 
 ### 2026-08-30 (14) — 対話モデルもローカルを断念 → claude-haiku-4-5／ランキング用スクリプト追加
 

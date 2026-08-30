@@ -53,7 +53,7 @@ OpenClaw Gateway  ── launchd: ai.openclaw.gateway
 | 用途 | モデル | 認証 |
 |---|---|---|
 | 対話（Slack DM でクゥと会話） | `anthropic/claude-haiku-4-5`（fallback `ollama/qwen3.6:35b-mlx`） | Anthropic（cron と同じ setup-token） |
-| cron ダイジェスト | `anthropic/claude-sonnet-5`（fallback `anthropic/claude-haiku-4-5`） | `claude setup-token` → `openclaw models auth login --provider anthropic`（「Anthropic setup-token」を選択） |
+| cron ダイジェスト | `anthropic/claude-haiku-4-5`（fallback `anthropic/claude-sonnet-5`）※8/30 sonnet→haiku | `claude setup-token` → `openclaw models auth login --provider anthropic`（「Anthropic setup-token」を選択） |
 
 - 対話モデル選定の経緯: ローカル勢（`ornith-1.5:35b`=「No response requested.」/ `nemotron`=ツール30回ループ /
   `qwen3.6:35b-mlx`=観測値ランキングで幻覚＋中国語混入）はいずれも日本語エージェント用途に不向き。
@@ -61,6 +61,8 @@ OpenClaw Gateway  ── launchd: ai.openclaw.gateway
 - ローカルモデルの `num_ctx` はモデル既定（qwen3.6 は 262144）だと KV キャッシュ肥大＋prompt処理が遅い。
   `agents.defaults.models.<ref>.params = { num_ctx: 32768, keep_alive: "60m" }` に設定。
   会話が長くなったら `openclaw sessions compact "<key>" --max-lines N` で圧縮。
+- `agents.defaults.compaction = { mode: "safeguard", keepRecentTokens: 10000 }` で自動圧縮を早める。
+- ローカルモデルは日本語のツール利用で幻覚・中国語混入が出るため、対話・cron とも Claude に寄せた（8/30 決定。今後のモデルに期待）。
 - cron を Claude にした理由: ローカルモデルだと 1ラン 4〜16分・出力不安定・同時起動で AbortError が頻発。
   Claude だと 36〜90秒で安定。
 
