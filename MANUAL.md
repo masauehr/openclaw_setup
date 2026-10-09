@@ -208,12 +208,14 @@ rm ~/Library/LaunchAgents/local.searxng.plist
 rm -rf ~/searxng
 ```
 
-## Bluesky 自動投稿（2026-10-09 追加・認証待ち）
+## Bluesky 自動投稿（2026-10-09 追加・2026-10-10 有効化）
 
 - `~/.openclaw/workspace/bin/bsky_post.py`（標準ライブラリのみ）が Bluesky に投稿。本文＋天気図・衛星解説ページ（`https://masauehr.github.io/weather_chart_vlm/webui/index.html`）のリンクカード。`--dry-run` で内容確認可。
-- cron `bsky-weather-am`（毎日 09:25 JST、haiku）が気象庁MCPで180字以内に要約→スクリプトをexec。**現在は無効（disabled）**。
+- cron `bsky-weather-am`（毎日 09:25 JST、haiku）が気象庁MCPで180字以内に要約→スクリプトをexec。**2026-10-10 に有効化済み**。
 - 有効化手順: Bluesky でアプリパスワード発行 → `~/.openclaw/bsky.env` に `BSKY_HANDLE` / `BSKY_APP_PASSWORD` を記入し `chmod 600` → `openclaw cron run <id> --wait --expect-final` で試験 → `openclaw cron enable <id>`。
 
 ### 2026-10-10 投稿内容の変更
 - 本文を3行構成（250字以内）に変更。1行目を「🤖AIによる自動生成」で始め、全国の概況→地域ごとの特徴→警報・災害の順。
 - リンクカードの説明文も「AIが天気図・衛星画像を自動収集して解説する試み」に変更。リンク先ページにも同趣旨の注記を追加（[weather-chart-vlm](weather-chart-vlm.md)）。
+
+- 2026-10-10: `bsky-weather-am` を有効化（毎日 09:25 JST で自動投稿）。
