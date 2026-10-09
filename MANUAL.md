@@ -213,3 +213,7 @@ rm -rf ~/searxng
 - `~/.openclaw/workspace/bin/bsky_post.py`（標準ライブラリのみ）が Bluesky に投稿。本文＋天気図・衛星解説ページ（`https://masauehr.github.io/weather_chart_vlm/webui/index.html`）のリンクカード。`--dry-run` で内容確認可。
 - cron `bsky-weather-am`（毎日 09:25 JST、haiku）が気象庁MCPで180字以内に要約→スクリプトをexec。**現在は無効（disabled）**。
 - 有効化手順: Bluesky でアプリパスワード発行 → `~/.openclaw/bsky.env` に `BSKY_HANDLE` / `BSKY_APP_PASSWORD` を記入し `chmod 600` → `openclaw cron run <id> --wait --expect-final` で試験 → `openclaw cron enable <id>`。
+
+### 2026-10-10 投稿内容の変更
+- 本文を3行構成（250字以内）に変更。1行目を「🤖AIによる自動生成」で始め、全国の概況→地域ごとの特徴→警報・災害の順。
+- リンクカードの説明文も「AIが天気図・衛星画像を自動収集して解説する試み」に変更。リンク先ページにも同趣旨の注記を追加（[weather-chart-vlm](weather-chart-vlm.md)）。
