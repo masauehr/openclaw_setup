@@ -60,6 +60,18 @@
 
 ## ログ
 
+### 2026-10-09 — Bluesky 自動投稿を追加（cron `bsky-weather-am`・認証待ちで無効）
+
+- **目的**: Slack に送っている気象情報の要約と、天気図・衛星画像の解説ページ（GitHub Pages）へのリンクを Bluesky に投稿
+- **やったこと**:
+  - `~/.openclaw/workspace/bin/bsky_post.py` 作成（標準ライブラリのみ。AT Protocol の createSession → createRecord。リンクカード付き・300字超は末尾を切る・`--dry-run` あり）
+  - cron `bsky-weather-am`（id `7c515a83`、毎日 09:25 JST、haiku／fallback sonnet）を **disabled で登録**。気象庁MCPで要約（180字以内）→ スクリプトを exec → 結果を Slack DM に返す
+  - 時刻は weather_chart_vlm の更新（8:45）と weather-jp-am（9:10）の後。解説ページのURL: `https://masauehr.github.io/weather_chart_vlm/webui/index.html`
+- **結果**: dry-run で本文・リンクカードの JSON を確認（実投稿は未実施）
+- **次アクション（ユーザー作業）**: Bluesky 設定 → プライバシーとセキュリティ → アプリパスワードを発行し、
+  `~/.openclaw/bsky.env`（`BSKY_HANDLE=` / `BSKY_APP_PASSWORD=`、`chmod 600`）に記入 →
+  `openclaw cron run 7c515a83 --wait --expect-final` で試験投稿 → 問題なければ `openclaw cron enable 7c515a83`
+
 ### 2026-08-30 (16) — cron を haiku 化・夕方廃止・09:10-09:16 へ
 
 - **経緯**: ローカル断念決定を受け、定期実行のコスト削減と他自動実行との重複回避

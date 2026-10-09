@@ -207,3 +207,9 @@ launchctl bootout gui/$(id -u)/local.searxng
 rm ~/Library/LaunchAgents/local.searxng.plist
 rm -rf ~/searxng
 ```
+
+## Bluesky 自動投稿（2026-10-09 追加・認証待ち）
+
+- `~/.openclaw/workspace/bin/bsky_post.py`（標準ライブラリのみ）が Bluesky に投稿。本文＋天気図・衛星解説ページ（`https://masauehr.github.io/weather_chart_vlm/webui/index.html`）のリンクカード。`--dry-run` で内容確認可。
+- cron `bsky-weather-am`（毎日 09:25 JST、haiku）が気象庁MCPで180字以内に要約→スクリプトをexec。**現在は無効（disabled）**。
+- 有効化手順: Bluesky でアプリパスワード発行 → `~/.openclaw/bsky.env` に `BSKY_HANDLE` / `BSKY_APP_PASSWORD` を記入し `chmod 600` → `openclaw cron run <id> --wait --expect-final` で試験 → `openclaw cron enable <id>`。

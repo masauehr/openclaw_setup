@@ -190,3 +190,9 @@ openclaw config set commands.ownerAllowFrom '["slack:U0XXXXXXXXX"]'
 openclaw daemon restart
 ```
 承認制をやめたい場合は DM ポリシーを緩める（`openclaw configure --section channels` で Slack の DM policy を変更）。
+
+### Bluesky（投稿専用・2026-10-09）
+
+OpenClaw 標準のチャンネルではなく、`bsky_post.py` を cron から exec する方式（受信はしない）。
+認証は Bluesky のアプリパスワード（`~/.openclaw/bsky.env`、権限600、リポジトリ外）。
+詳細は [PROGRESS.md](PROGRESS.md) の 2026-10-09 を参照。
