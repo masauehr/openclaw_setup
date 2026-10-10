@@ -219,3 +219,9 @@ rm -rf ~/searxng
 - リンクカードの説明文も「AIが天気図・衛星画像を自動収集して解説する試み」に変更。リンク先ページにも同趣旨の注記を追加（[weather-chart-vlm](weather-chart-vlm.md)）。
 
 - 2026-10-10: `bsky-weather-am` を有効化（毎日 09:25 JST で自動投稿）。
+
+### 2026-10-10 まとめ（Bluesky 自動投稿）
+- 投稿時刻は 09:40 JST に変更（旧 09:25）。詳細な仕様・運用・津波ガード・A/B比較は [bluesky-auto-post.md](bluesky-auto-post.md) を参照。
+- OpenClaw 側の変更: cron `bsky-weather-am` の指示文（3行・AI明記・必須ツール・台風は get_typhoon のみ・津波は固定文・VLM参照）、`weather-jp-am` に台風・津波の規則を追加、`weather-jp-am`/`econ-jp-am` のモデルを haiku に再設定（巻き戻り再発）。
+- 運用の正本: `~/openclaw_prj/projects/automated-data-collector`（WORKLOG.md に経緯と学び）。
+
