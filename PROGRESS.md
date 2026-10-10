@@ -60,6 +60,12 @@
 
 ## ログ
 
+### 2026-10-10 — cron のモデル巻き戻り再発を修正
+
+- `weather-jp-am` / `econ-jp-am` が `claude-sonnet-5` に戻っていた（8/30 の「まれに既定へ巻き戻る」事象の再発）
+- `openclaw cron edit <id> --model anthropic/claude-haiku-4-5 --fallbacks anthropic/claude-sonnet-5` で再設定し `cron get` で確認
+- 原因は未特定。次アクション: 定期的に `cron get` でモデルを点検
+
 ### 2026-10-10 — cron `bsky-weather-am` を有効化
 
 - 再試験投稿（3行・AI明記）を確認後、`openclaw cron enable` で有効化。次回は 09:25 JST（約1時間後）
