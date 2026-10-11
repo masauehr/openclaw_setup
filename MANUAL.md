@@ -225,3 +225,6 @@ rm -rf ~/searxng
 - OpenClaw 側の変更: cron `bsky-weather-am` の指示文（3行・AI明記・必須ツール・台風は get_typhoon のみ・津波は固定文・VLM参照）、`weather-jp-am` に台風・津波の規則を追加、`weather-jp-am`/`econ-jp-am` のモデルを haiku に再設定（巻き戻り再発）。
 - 運用の正本: `~/openclaw_prj/projects/automated-data-collector`（WORKLOG.md に経緯と学び）。
 
+### 2026-10-11 Bluesky 投稿は OpenClaw から launchd（B版）へ移行
+- cron `bsky-weather-am` は朝のモデル応答停止（`idle timeout (model silent)`）で4回連続失敗したため**無効化**。現行は launchd `com.user.bsky_daily_b`。詳細は [bluesky-auto-post.md](bluesky-auto-post.md)。
+- OpenClaw の他の cron（weather-jp-am／econ-jp-am／ai-weekly-digest）は継続。weather-jp-am も同日朝に同じ停止を1回起こした（フォールバックで回復）。
