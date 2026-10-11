@@ -228,3 +228,9 @@ rm -rf ~/searxng
 ### 2026-10-11 Bluesky 投稿は OpenClaw から launchd（B版）へ移行
 - cron `bsky-weather-am` は朝のモデル応答停止（`idle timeout (model silent)`）で4回連続失敗したため**無効化**。現行は launchd `com.user.bsky_daily_b`。詳細は [bluesky-auto-post.md](bluesky-auto-post.md)。
 - OpenClaw の他の cron（weather-jp-am／econ-jp-am／ai-weekly-digest）は継続。weather-jp-am も同日朝に同じ停止を1回起こした（フォールバックで回復）。
+
+### 2026-10-11 OpenClaw に気象庁MCPを登録
+- 従来 OpenClaw には MCP が無く、cron 指示文の「気象庁MCPを使う」は存在しないツールを指していた（Bluesky A版の失敗の主因）。`openclaw mcp add jma`（`/opt/homebrew/bin/python3 ~/projects/jma_mcp/server.py`、14ツール、`get_tsunami_info` は除外）で登録。ツールは `jma__get_typhoon` の名前で見える。確認: `openclaw mcp doctor` / `openclaw mcp probe`、設定変更後は `openclaw mcp reload`。
+- `weather-jp-am` を MCP 利用に変更し、`toolsAllow`（許可ツール制限）を解除。MCP ツールを使わせる cron では `toolsAllow` に注意（MCP 名が含まれないと使えない）。
+- A版 Bluesky は非公開の内部実行 `bsky-internal-a`（9:45・配信なし）に再編。詳細: [bluesky-auto-post.md](bluesky-auto-post.md)。
+
