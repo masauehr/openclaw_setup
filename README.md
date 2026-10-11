@@ -10,6 +10,8 @@ OpenClaw（セルフホスト型の個人用 AI アシスタント・ゲート�
 - **チャットアプリ連携** → [CHANNELS.md](CHANNELS.md)
 - **トラブルシューティング** → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
+> **導入後の運用（cron・Bluesky 自動投稿など）は [automated-data-collector](https://github.com/masauehr/automated-data-collector)**（`~/openclaw_prj/projects/automated-data-collector/`）に記録している。本リポジトリは「導入するまで」の記録。親の統合管理リポジトリは [openclaw_common](https://github.com/masauehr/openclaw_common)（`~/openclaw_prj/`）。なお Bluesky 自動投稿は OpenClaw を使わない B版が本番で、Claude Code と MCP ツールの活用が要点（詳細は automated-data-collector の README）。
+
 > [MANUAL.md](MANUAL.md) は `pc_docs/manuals/automation/openclaw.md` のコピー（自己完結のため同梱）。両方を更新すること。
 
 > ⚠️ このプロジェクトは 2026-08-29 開始。OpenClaw は 2026年1月末に現名称へ改称された
