@@ -234,3 +234,7 @@ rm -rf ~/searxng
 - `weather-jp-am` を MCP 利用に変更し、`toolsAllow`（許可ツール制限）を解除。MCP ツールを使わせる cron では `toolsAllow` に注意（MCP 名が含まれないと使えない）。
 - A版 Bluesky は非公開の内部実行 `bsky-internal-a`（9:45・配信なし）に再編。詳細: [bluesky-auto-post.md](bluesky-auto-post.md)。
 
+### 2026-10-13 cron 指示文の追加ルール
+- `weather-jp-am` と `bsky-internal-a` の指示文に「風は平均風速で判断・記述する（瞬間風速で分類しない）」を追加（`cron_sync.py apply` で反映、git は automated-data-collector の `cron/`）。`weather-jp-am` は 10/11 に「必須ツール（省略禁止）」も追加済み。
+- Bluesky 本番（B版）の改善内容は [bluesky-auto-post.md](bluesky-auto-post.md) の「2026-10-13 B版の改善」を参照。
+
