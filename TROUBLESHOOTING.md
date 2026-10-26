@@ -238,6 +238,24 @@
 - 再発防止: num_ctx を絞ったことで自動圧縮が早く効く。ダイジェストの配信先を DM から別チャンネルに
   分ければセッション汚染をさらに減らせる（未対応）。
 
+### 2026-10-26 — cron ダイジェストが 10 分前後で abort（AbortError: agent run aborted）
+
+- 症状: weather-jp-am / econ-jp-am / ai-weekly-digest が 09:12〜09:35 に error。実行が 10 分以上続いたあと
+  `AbortError: agent run aborted`。前日 10/25 朝も `LLM idle timeout (60s)` で全モデル失敗（同日中に再実行で成功）。
+- 原因: `api.anthropic.com` へのリクエスト後、応答ストリームが無進捗のまま停止
+  （`stalled session ... activeWorkKind=model_call lastProgress=model_call:stream_progress`）。
+  モデル呼び出しに `timeoutMs=undefined`、ジョブ timeout も 1200 秒と長く、止まった接続を待ち続け、最後に
+  stuck session 検知が強制 abort。ゲートウェイは 10/5 から 20 日以上起動したままで、スリープ復帰後などに
+  接続が滞留した可能性が高い（確定ではない）。認証は正常（bsky-internal-a は同時間帯に成功、手動実行も成功）。
+- 対処:
+  1. 3 ジョブを手動再実行（`openclaw cron run <id>`）→ いずれも 20〜46 秒で ok・Slack 配信済み。
+  2. `openclaw gateway restart` で古いプロセスを入れ替え。
+  3. 3 ジョブに `openclaw cron edit <id> --timeout-seconds 300`（失敗時は cron の error backoff で自動再試行）。
+  4. 実行時刻を分散: econ 09:13→09:20、ai-weekly 月曜 09:16→09:30（weather 09:10・bsky 09:45 は据え置き）。
+- 再発防止: 上記 3・4。失敗は従来どおり Slack に投稿されるため failure-alert の追加は不要。
+  効果確認は 10/27 09:10 の実行から。再発したらログ `/tmp/openclaw/openclaw-YYYY-MM-DD.log` の
+  `stalled session` / `model-fetch` を確認。
+
 ### （テンプレ）YYYY-MM-DD — 症状の1行要約
 
 - 症状:
